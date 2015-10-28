@@ -53,6 +53,31 @@ function init_config {
 	done
 }
 
+function init_raid {
+	instance_disks=( $(lsblk  -lp -o NAME,TYPE |grep disk |cut -d' ' -f 1 | grep -v xvda) )
+	if (( ${#instance_disks[@]} > 1 )); then
+		/usr/sbin/mdadm --create /dev/md0 --level=0 --chunk=512 --raid-devices=${#instance_disks[@]} ${instance_disks[@]}
+		/usr/sbin/mdadm --detail --scan > /etc/mdadm.conf
+		/usr/sbin/mkfs.ext4 -b 4096 -E stride=128,stripe-width=$((128 * ${#instance_disks[@]})) /dev/md0
+
+
+		cat << EOF > /etc/systemd/system/var-lib-kubelet.mount
+[Unit]
+Before=docker.service
+[Mount]
+What=/dev/md0
+Where=/var/lib/kubelet
+Type=ext4
+[Install]
+WantedBy=multi-user.target
+EOF
+
+		systemctl daemon-reload
+		systemctl enable var-lib-kubelet.mount
+		systemctl start var-lib-kubelet.mount
+	fi
+}
+
 function init_docker {
 	local TEMPLATE=/etc/systemd/system/docker.service.d/40-flannel.conf
 	[ -f $TEMPLATE ] || {
@@ -114,6 +139,7 @@ EOF
 }
 
 init_config
+init_raid
 init_templates
 init_docker
 
