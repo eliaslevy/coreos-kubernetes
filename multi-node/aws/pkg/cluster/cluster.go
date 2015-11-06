@@ -117,6 +117,11 @@ func (c *Cluster) Create(tlsConfig *TLSConfig) error {
 			UsePreviousValue: aws.Bool(true),
 		},
 		{
+			ParameterKey:     aws.String(parWorkerDenseStorageCount),
+			ParameterValue:   aws.String(fmt.Sprintf("%d", c.cfg.WorkerDenseStorageCount)),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
 			ParameterKey:     aws.String(parElasticSearchHosts),
 			ParameterValue:   aws.String(c.cfg.ElasticSearchHosts),
 			UsePreviousValue: aws.Bool(true),

@@ -21,6 +21,7 @@ type Config struct {
 	AvailabilityZone string `yaml:"availabilityZone"`
 	ArtifactURL      string `yaml:"artifactURL"`
 	WorkerCount      int    `yaml:"workerCount"`
+	WorkerDenseStorageCount int `yaml:"workerDenseStorageCount"`
 	ElasticSearchHosts string `yaml:"elasticSearchHosts"`
 }
 

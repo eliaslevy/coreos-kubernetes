@@ -21,7 +21,9 @@ const (
 	resNameEIPController                = "EIPController"
 	resNameAlarmControllerRecover       = "AlarmControllerRecover"
 	resNameAutoScaleWorker              = "AutoScaleWorker"
+	resNameAutoScaleWorkerDenseStorage  = "AutoScaleWorkerDenseStorage"
 	resNameLaunchConfigurationWorker    = "LaunchConfigurationWorker"
+	resNameLaunchConfigurationWorkerDenseStorage = "LaunchConfigurationWorkerDenseStorage"
 	resNameIAMRoleController            = "IAMRoleController"
 	resNameIAMInstanceProfileController = "IAMInstanceProfileController"
 	resNameIAMRoleWorker                = "IAMRoleWorker"
@@ -32,6 +34,7 @@ const (
 	parNameReleaseChannel         = "ReleaseChannel"
 	parNameControllerInstanceType = "ControllerInstanceType"
 	parNameWorkerInstanceType     = "WorkerInstanceType"
+	parWorkerDenseStorageInstanceType = "WorkerDenseStorageInstanceType"
 	parNameKeyName                = "KeyName"
 	parArtifactURL                = "ArtifactURL"
 	parCACert                     = "CACert"
@@ -40,6 +43,7 @@ const (
 	parWorkerCert                 = "WorkerCert"
 	parWorkerKey                  = "WorkerKey"
 	parWorkerCount                = "WorkerCount"
+	parWorkerDenseStorageCount		= "WorkerDenseStorageCount"
 	parAvailabilityZone           = "AvailabilityZone"
 	parElasticSearchHosts         = "ElasticSearchHosts"
 )
@@ -456,6 +460,34 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		},
 	}
 
+	res[resNameLaunchConfigurationWorkerDenseStorage] = map[string]interface{}{
+		"Type": "AWS::AutoScaling::LaunchConfiguration",
+		"Properties": map[string]interface{}{
+			"ImageId":      imageID,
+			"InstanceType": newRef(parWorkerDenseStorageInstanceType),
+			"BlockDeviceMappings": []interface{}{
+				map[string]interface{} {
+					"DeviceName": 	"/dev/xvdb",
+					"VirtualName": 	"ephemeral0",
+				},
+				map[string]interface{} {
+					"DeviceName": 	"/dev/xvdc",
+					"VirtualName": 	"ephemeral1",
+				},
+				map[string]interface{} {
+					"DeviceName": 	"/dev/xvdd",
+					"VirtualName": 	"ephemeral2",
+				},
+			},
+			"KeyName":      newRef(parNameKeyName),
+			"UserData": map[string]interface{}{
+				"Fn::Base64": renderTemplate(baseWorkerCloudConfig),
+			},
+			"SecurityGroups":     []interface{}{newRef(resNameSecurityGroupWorker)},
+			"IamInstanceProfile": newRef(resNameIAMInstanceProfileWorker),
+		},
+	}
+
 	res[resNameAutoScaleWorker] = map[string]interface{}{
 		"Type": "AWS::AutoScaling::AutoScalingGroup",
 		"Properties": map[string]interface{}{
@@ -464,6 +496,24 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 			"DesiredCapacity":         newRef(parWorkerCount),
 			"MinSize":                 newRef(parWorkerCount),
 			"MaxSize":                 newRef(parWorkerCount),
+			"HealthCheckGracePeriod":  600,
+			"HealthCheckType":         "EC2",
+			"VPCZoneIdentifier":       []interface{}{newRef(resNameSubnet)},
+			"Tags": []interface{}{
+				newPropagatingTag(tagKubernetesCluster, newRef(parClusterName)),
+				newPropagatingTag("Name", "kube-aws-worker"),
+			},
+		},
+	}
+
+	res[resNameAutoScaleWorkerDenseStorage] = map[string]interface{}{
+		"Type": "AWS::AutoScaling::AutoScalingGroup",
+		"Properties": map[string]interface{}{
+			"AvailabilityZones":       []interface{}{availabilityZone},
+			"LaunchConfigurationName": newRef(resNameLaunchConfigurationWorkerDenseStorage),
+			"DesiredCapacity":         newRef(parWorkerDenseStorageCount),
+			"MinSize":                 newRef(parWorkerDenseStorageCount),
+			"MaxSize":                 newRef(parWorkerDenseStorageCount),
 			"HealthCheckGracePeriod":  600,
 			"HealthCheckType":         "EC2",
 			"VPCZoneIdentifier":       []interface{}{newRef(resNameSubnet)},
@@ -500,6 +550,12 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		"Type":        "String",
 		"Default":     "m3.medium",
 		"Description": "EC2 instance type used for each worker instance",
+	}
+
+	par[parWorkerDenseStorageInstanceType] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     "d2.xlarge",
+		"Description": "EC2 instance type used for each dense storage worker instance",
 	}
 
 	par[parNameKeyName] = map[string]interface{}{
@@ -542,6 +598,12 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		"Type":        "String",
 		"Default":     "1",
 		"Description": "Number of worker instances to create, may be modified later",
+	}
+
+	par[parWorkerDenseStorageCount] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     "0",
+		"Description": "Number of dense storage worker instances to create, may be modified later",
 	}
 
 	par[parAvailabilityZone] = map[string]interface{}{
