@@ -125,6 +125,7 @@ EOF
 	template manifests/worker/kubeconfig /etc/kubernetes/worker-kubeconfig.yaml
 	template manifests/worker/kube-proxy.yaml /etc/kubernetes/manifests/kube-proxy.yaml
 	template manifests/worker/aws-node-labels.yaml /etc/kubernetes/manifests/aws-node-labels.yaml
+	template manifests/worker/fluentd.yaml /etc/kubernetes/manifests/fluentd.yaml
 
 	local TEMPLATE=/run/flannel/options.env
 	[ -f $TEMPLATE ] || {

@@ -124,6 +124,8 @@ EOF
 	template manifests/cluster/kube-dns-rc.json /srv/kubernetes/manifests/kube-dns-rc.json
 	template manifests/cluster/kube-dns-svc.json /srv/kubernetes/manifests/kube-dns-svc.json
 
+	template manifests/worker/fluentd.yaml /etc/kubernetes/manifests/fluentd.yaml
+
 	local TEMPLATE=/etc/flannel/options.env
 	[ -f $TEMPLATE ] || {
 		echo "TEMPLATE: $TEMPLATE"

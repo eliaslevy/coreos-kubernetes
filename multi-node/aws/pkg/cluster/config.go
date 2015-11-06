@@ -21,6 +21,7 @@ type Config struct {
 	AvailabilityZone string `yaml:"availabilityZone"`
 	ArtifactURL      string `yaml:"artifactURL"`
 	WorkerCount      int    `yaml:"workerCount"`
+	ElasticSearchHosts string `yaml:"elasticSearchHosts"`
 }
 
 func (cfg *Config) Valid() error {
@@ -38,6 +39,9 @@ func (cfg *Config) Valid() error {
 	}
 	if _, err := url.Parse(cfg.ArtifactURL); err != nil {
 		return fmt.Errorf("invalid artifactURL: %v", err)
+	}
+	if cfg.ElasticSearchHosts == "" {
+		return errors.New("elasticSearchHosts must be set")
 	}
 	return nil
 }

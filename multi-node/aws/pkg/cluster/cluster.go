@@ -116,6 +116,11 @@ func (c *Cluster) Create(tlsConfig *TLSConfig) error {
 			ParameterValue:   aws.String(fmt.Sprintf("%d", c.cfg.WorkerCount)),
 			UsePreviousValue: aws.Bool(true),
 		},
+		{
+			ParameterKey:     aws.String(parElasticSearchHosts),
+			ParameterValue:   aws.String(c.cfg.ElasticSearchHosts),
+			UsePreviousValue: aws.Bool(true),
+		},
 	}
 
 	if c.cfg.AvailabilityZone != "" {

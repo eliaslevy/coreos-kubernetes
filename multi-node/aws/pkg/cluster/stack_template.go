@@ -41,6 +41,7 @@ const (
 	parWorkerKey                  = "WorkerKey"
 	parWorkerCount                = "WorkerCount"
 	parAvailabilityZone           = "AvailabilityZone"
+	parElasticSearchHosts         = "ElasticSearchHosts"
 )
 
 var (
@@ -547,6 +548,11 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		"Type":        "String",
 		"Default":     "",
 		"Description": "Specific availability zone",
+	}
+
+	par[parElasticSearchHosts] = map[string]interface{}{
+		"Type":        "String",
+		"Description": "ElasticSearch endpoints",
 	}
 
 	regionMap, err := getRegionMap()

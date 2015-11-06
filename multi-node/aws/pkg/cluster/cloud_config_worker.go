@@ -23,6 +23,7 @@ write_files:
     ETCD_ENDPOINTS=http://10.0.0.50:2379
     CONTROLLER_ENDPOINT=https://10.0.0.50
     ARTIFACT_URL={{ ArtifactURL }}
+    ES_HOSTS={{ ElasticSearchHosts }}
 
 - path: /tmp/install-worker.sh
   content: |
