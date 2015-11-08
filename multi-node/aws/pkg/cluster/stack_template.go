@@ -51,6 +51,8 @@ var (
 	supportedChannels    = []string{"alpha"}
 	tagKubernetesCluster = "KubernetesCluster"
 
+	vpcCidr = "10.0.0.0/16"
+
 	sgProtoTCP = "tcp"
 	sgProtoUDP = "udp"
 
@@ -144,7 +146,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 	res[resNameVPC] = map[string]interface{}{
 		"Type": "AWS::EC2::VPC",
 		"Properties": map[string]interface{}{
-			"CidrBlock":          "10.0.0.0/16",
+			"CidrBlock":          vpcCidr,
 			"EnableDnsSupport":   true,
 			"EnableDnsHostnames": true,
 			"InstanceTenancy":    "default",
@@ -225,8 +227,8 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 				map[string]interface{}{"IpProtocol": sgProtoUDP, "FromPort": 0, "ToPort": sgPortMax, "CidrIp": sgAllIPs},
 			},
 			"SecurityGroupIngress": []map[string]interface{}{
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 22, "ToPort": 22, "CidrIp": sgAllIPs},
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": sgAllIPs},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 22, "ToPort": 22, "CidrIp": vpcCidr},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": vpcCidr},
 			},
 			"Tags": []map[string]interface{}{
 				newTag(tagKubernetesCluster, newRef(parClusterName)),
@@ -254,7 +256,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 				map[string]interface{}{"IpProtocol": sgProtoUDP, "FromPort": 0, "ToPort": sgPortMax, "CidrIp": sgAllIPs},
 			},
 			"SecurityGroupIngress": []map[string]interface{}{
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 22, "ToPort": 22, "CidrIp": sgAllIPs},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 22, "ToPort": 22, "CidrIp": vpcCidr},
 			},
 			"Tags": []map[string]interface{}{
 				newTag(tagKubernetesCluster, newRef(parClusterName)),
