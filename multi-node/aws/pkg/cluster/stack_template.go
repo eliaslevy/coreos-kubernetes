@@ -34,22 +34,24 @@ const (
 	resNameIAMInstanceProfileWorker     = "IAMInstanceProfileWorker"
 
 	// parameter names
-	parClusterName                = "ClusterName"
-	parNameReleaseChannel         = "ReleaseChannel"
-	parNameControllerInstanceType = "ControllerInstanceType"
-	parNameWorkerInstanceType     = "WorkerInstanceType"
+	parClusterName                  = "ClusterName"
+	parNameReleaseChannel           = "ReleaseChannel"
+	parNameControllerInstanceType   = "ControllerInstanceType"
+	parNameControllerRootVolumeSize = "ControllerRootVolumeSize"
+	parNameWorkerInstanceType       = "WorkerInstanceType"
 	parWorkerDenseStorageInstanceType = "WorkerDenseStorageInstanceType"
-	parNameKeyName                = "KeyName"
-	parArtifactURL                = "ArtifactURL"
-	parCACert                     = "CACert"
-	parAPIServerCert              = "APIServerCert"
-	parAPIServerKey               = "APIServerKey"
-	parWorkerCert                 = "WorkerCert"
-	parWorkerKey                  = "WorkerKey"
-	parWorkerCount                = "WorkerCount"
+	parNameKeyName                  = "KeyName"
+	parArtifactURL                  = "ArtifactURL"
+	parCACert                       = "CACert"
+	parAPIServerCert                = "APIServerCert"
+	parAPIServerKey                 = "APIServerKey"
+	parWorkerCert                   = "WorkerCert"
+	parWorkerKey                    = "WorkerKey"
+	parWorkerCount                  = "WorkerCount"
 	parWorkerDenseStorageCount		= "WorkerDenseStorageCount"
-	parAvailabilityZone           = "AvailabilityZone"
-	parElasticSearchHosts         = "ElasticSearchHosts"
+	parNameWorkerRootVolumeSize     = "WorkerRootVolumeSize"
+	parAvailabilityZone             = "AvailabilityZone"
+	parElasticSearchHosts           = "ElasticSearchHosts"
 )
 
 var (
@@ -511,6 +513,14 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 					},
 				},
 			},
+			"BlockDeviceMappings": []map[string]interface{}{
+				map[string]interface{}{
+					"DeviceName": "/dev/xvda",
+					"Ebs": map[string]interface{}{
+						"VolumeSize": newRef(parNameControllerRootVolumeSize),
+					},
+				},
+			},
 			"AvailabilityZone": availabilityZone,
 			"Tags": []map[string]interface{}{
 				newTag(tagKubernetesCluster, newRef(parClusterName)),
@@ -562,6 +572,14 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 			},
 			"SecurityGroups":     []interface{}{newRef(resNameSecurityGroupWorker)},
 			"IamInstanceProfile": newRef(resNameIAMInstanceProfileWorker),
+			"BlockDeviceMappings": []map[string]interface{}{
+				map[string]interface{}{
+					"DeviceName": "/dev/xvda",
+					"Ebs": map[string]interface{}{
+						"VolumeSize": newRef(parNameWorkerRootVolumeSize),
+					},
+				},
+			},
 		},
 	}
 
@@ -571,6 +589,12 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 			"ImageId":      imageID,
 			"InstanceType": newRef(parWorkerDenseStorageInstanceType),
 			"BlockDeviceMappings": []interface{}{
+				map[string]interface{}{
+					"DeviceName": "/dev/xvda",
+					"Ebs": map[string]interface{}{
+						"VolumeSize": newRef(parNameWorkerRootVolumeSize),
+					},
+				},
 				map[string]interface{} {
 					"DeviceName": 	"/dev/xvdb",
 					"VirtualName": 	"ephemeral0",
@@ -651,6 +675,12 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		"Description": "EC2 instance type used for each controller instance",
 	}
 
+	par[parNameControllerRootVolumeSize] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     "30",
+		"Description": "Controller root volume size (GiB)",
+	}
+
 	par[parNameWorkerInstanceType] = map[string]interface{}{
 		"Type":        "String",
 		"Default":     "m3.medium",
@@ -709,6 +739,12 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		"Type":        "String",
 		"Default":     "0",
 		"Description": "Number of dense storage worker instances to create, may be modified later",
+	}
+
+	par[parNameWorkerRootVolumeSize] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     "30",
+		"Description": "Worker root volume size (GiB)",
 	}
 
 	par[parAvailabilityZone] = map[string]interface{}{
