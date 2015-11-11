@@ -67,6 +67,13 @@ function init_config {
 	done
 }
 
+function install_kubelet {
+	mkdir /opt
+	cd /opt
+	curl -sLO https://storage.googleapis.com/kubernetes-release/release/v1.1.1/bin/linux/amd64/kubelet
+	chmod a+rx /opt/kubelet
+}
+
 function init_templates {
 	local TEMPLATE=/etc/systemd/system/kubelet.service
 	[ -f $TEMPLATE ] || {
@@ -75,7 +82,7 @@ function init_templates {
 		cat << EOF > $TEMPLATE
 [Service]
 ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-ExecStart=/usr/bin/kubelet \
+ExecStart=/opt/kubelet \
   --api_servers=http://127.0.0.1:8080 \
   --register-node=false \
   --allow-privileged=true \
@@ -123,6 +130,7 @@ function start_addons {
 }
 
 init_config
+install_kubelet
 init_templates
 
 systemctl daemon-reload
