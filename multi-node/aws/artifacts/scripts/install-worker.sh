@@ -10,7 +10,7 @@ export ETCD_ENDPOINTS=
 export CONTROLLER_ENDPOINT=
 
 # Specify the version (vX.Y.Z) of Kubernetes assets to deploy
-export K8S_VER=v1.0.7
+export K8S_VER=v1.1.1
 
 # The address of the AWS provided DNS server in the cluster subnet.  It is the .2 address in 
 # whatever CIDR was assigned to the cluster subnet.
