@@ -32,6 +32,7 @@ write_files:
   content: |
     ETCD_ENDPOINTS=http://127.0.0.1:2379
     ARTIFACT_URL={{ ArtifactURL }}
+    CLUSTER_NAME={{ ClusterName }}
     ES_HOSTS={{ ElasticSearchHosts }}
     
 - path: /tmp/install-controller.sh

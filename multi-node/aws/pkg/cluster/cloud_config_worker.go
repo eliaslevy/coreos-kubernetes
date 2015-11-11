@@ -10,6 +10,13 @@ coreos:
     etcd_endpoints: http://10.0.0.50:2379
 
   units:
+  - name: docker.service
+    command: start
+    drop-ins:
+      - name: 10-cbr0.conf
+        content: |
+          [Service]
+          Environment="DOCKER_OPTS=--bridge=cbr0 --iptables=false --ip-masq=false"
   - name: install-worker.service
     command: start
     content: |
