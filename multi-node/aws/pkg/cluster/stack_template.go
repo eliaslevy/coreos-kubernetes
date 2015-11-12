@@ -592,6 +592,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 
 	res[resNameAutoScaleWorker] = map[string]interface{}{
 		"Type": "AWS::AutoScaling::AutoScalingGroup",
+		"DependsOn": []interface{}{resNameInstanceController},
 		"Properties": map[string]interface{}{
 			"AvailabilityZones":       []interface{}{availabilityZone},
 			"LaunchConfigurationName": newRef(resNameLaunchConfigurationWorker),
@@ -610,6 +611,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 
 	res[resNameAutoScaleWorkerDenseStorage] = map[string]interface{}{
 		"Type": "AWS::AutoScaling::AutoScalingGroup",
+		"DependsOn": []interface{}{resNameInstanceController},
 		"Properties": map[string]interface{}{
 			"AvailabilityZones":       []interface{}{availabilityZone},
 			"LaunchConfigurationName": newRef(resNameLaunchConfigurationWorkerDenseStorage),
