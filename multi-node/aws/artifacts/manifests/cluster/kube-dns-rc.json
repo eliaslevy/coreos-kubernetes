@@ -68,11 +68,11 @@
           },
           {
             "args": [
-              "-machines=http://localhost:4001",
+              "-machines=http://127.0.0.1:4001",
               "-addr=0.0.0.0:53",
               "-domain=cluster.local."
             ],
-            "image": "gcr.io/google_containers/skydns:2015-03-11-001",
+            "image": "gcr.io/google_containers/skydns:2015-10-13-8c72f8c",
             "livenessProbe": {
               "httpGet": {
                 "path": "/healthz",
