@@ -22,6 +22,7 @@ func (c *ClusterInfo) String() string {
 	w.Init(buf, 0, 8, 0, '\t', 0)
 
 	fmt.Fprintf(w, "Cluster Name:\t%s\n", c.Name)
+	fmt.Fprintf(w, "Controller LB:\tkubernetes.%s.cluster.local (internal)\n", c.Name)
 	fmt.Fprintf(w, "VPN IP:\t%s\n", c.VpnIP)
 
 	w.Flush()

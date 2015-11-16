@@ -21,7 +21,11 @@ const (
 	resNameEipAssociationVpn            = "EipAssociationVpn"
 	resNameAlarmControllerRecoverVpn    = "AlarmControllerRecoverVpn"
 	resNameSecurityGroupController      = "SecurityGroupController"
+	resNameSecurityGroupLoadBalancerController = "SecurityGroupLoadBalancerController"
 	resNameSecurityGroupWorker          = "SecurityGroupWorker"
+	resNameLoadBalancerController       = "LoadBalancerController"
+	resNameHostedZone                   = "HostedZone"
+	resNameRecordSetController          = "RecordSetController"
 	resNameAutoScaleController          = "AutoScaleController"
 	resNameAutoScaleWorker              = "AutoScaleWorker"
 	resNameAutoScaleWorkerDenseStorage  = "AutoScaleWorkerDenseStorage"
@@ -363,6 +367,29 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		},
 	}
 
+	res[resNameSecurityGroupLoadBalancerController] = map[string]interface{}{
+		"Type": "AWS::EC2::SecurityGroup",
+		"Properties": map[string]interface{}{
+			"GroupDescription": newRef("AWS::StackName"),
+			"VpcId":            newRef(resNameVPC),
+			"SecurityGroupEgress": []map[string]interface{}{
+				map[string]interface{}{
+					"IpProtocol": sgProtoTCP, 
+					"FromPort":   0, 
+					"ToPort":     sgPortMax, 
+					"DestinationSecurityGroupId": newRef(resNameSecurityGroupController),
+				},
+			},
+			"SecurityGroupIngress": []map[string]interface{}{
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": vpcCidr},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": podCidr},
+			},
+			"Tags": []map[string]interface{}{
+				newTag(tagKubernetesCluster, newRef(parClusterName)),
+			},
+		},
+	}
+
 	res[resNameSecurityGroupWorker] = map[string]interface{}{
 		"Type": "AWS::EC2::SecurityGroup",
 		"Properties": map[string]interface{}{
@@ -461,6 +488,82 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 			"Path": "/",
 			"Roles": []map[string]interface{}{
 				newRef(resNameIAMRoleWorker),
+			},
+		},
+	}
+
+	res[resNameLoadBalancerController] = map[string]interface{}{
+		"Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+		"Properties":  map[string]interface{}{
+			"Scheme": "internal",
+			"Subnets": []interface{}{
+				newRef(resNameSubnet),
+			},
+			"SecurityGroups": []interface{}{newRef(resNameSecurityGroupLoadBalancerController)},
+			"Listeners": []interface{}{
+				map[string]interface{}{
+					"Protocol":         "TCP",
+					"LoadBalancerPort": "443",
+					"InstanceProtocol": "TCP",
+					"InstancePort":     "443",
+				},
+			},
+			"HealthCheck": map[string]interface{}{
+				"HealthyThreshold":   "2",
+				"Interval":           "60",
+				"Target":             "SSL:443",
+				"Timeout":            "30",
+				"UnhealthyThreshold": "2",
+			},
+			"Tags": []interface{}{
+				newTag(tagKubernetesCluster, newRef(parClusterName)),
+			},
+		},
+	}
+
+	res[resNameHostedZone] = map[string]interface{}{
+		"Type": "AWS::Route53::HostedZone",
+		"Properties": map[string]interface{}{
+			"Name": map[string]interface{}{
+				"Fn::Join": []interface{}{
+					"",
+					[]interface{}{
+						newRef(parClusterName),
+						".cluster.local",
+					},
+				},
+			},
+			"VPCs": []interface{}{
+				map[string]interface{}{
+					"VPCId": 		 newRef(resNameVPC),
+					"VPCRegion": newRef("AWS::Region"),
+				},
+			},
+		},
+	}
+
+	res[resNameRecordSetController] = map[string]interface{}{
+		"Type": "AWS::Route53::RecordSet",
+		"Properties": map[string]interface{}{
+			"HostedZoneId": newRef(resNameHostedZone),
+			"Name": map[string]interface{}{
+				"Fn::Join": []interface{}{
+					"",
+					[]interface{}{
+						"kubernetes.",
+						newRef(parClusterName),
+						".cluster.local",
+					},
+				},
+			},
+			"Type": "A",
+			"AliasTarget": map[string]interface{}{
+				"HostedZoneId": map[string]interface{}{
+					"Fn::GetAtt": []string{ resNameLoadBalancerController, "CanonicalHostedZoneNameID", },
+				},
+				"DNSName": map[string]interface{}{
+					"Fn::GetAtt": []string{ resNameLoadBalancerController, "DNSName", },
+				},
 			},
 		},
 	}
