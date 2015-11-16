@@ -53,7 +53,7 @@ const (
 	parWorkerCert                   = "WorkerCert"
 	parWorkerKey                    = "WorkerKey"
 	parWorkerCount                  = "WorkerCount"
-	parWorkerDenseStorageCount		= "WorkerDenseStorageCount"
+	parWorkerDenseStorageCount      = "WorkerDenseStorageCount"
 	parNameWorkerRootVolumeSize     = "WorkerRootVolumeSize"
 	parAvailabilityZone             = "AvailabilityZone"
 	parElasticSearchHosts           = "ElasticSearchHosts"
@@ -347,7 +347,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 				map[string]interface{}{"IpProtocol": sgProtoUDP, "FromPort": 0, "ToPort": sgPortMax, "CidrIp": sgAllIPs},
 			},
 			"SecurityGroupIngress": []map[string]interface{}{
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 22, "ToPort": 22, "CidrIp": vpcCidr},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":  22, "ToPort":  22, "CidrIp": vpcCidr},
 				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": vpcCidr},
 				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": podCidr},
 			},

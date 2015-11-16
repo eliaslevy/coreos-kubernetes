@@ -17,6 +17,7 @@ coreos:
         content: |
           [Service]
           Environment="DOCKER_OPTS=--bridge=cbr0 --iptables=false --ip-masq=false"
+
   - name: install-worker.service
     command: start
     content: |
