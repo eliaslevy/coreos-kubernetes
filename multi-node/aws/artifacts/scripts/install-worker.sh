@@ -51,7 +51,7 @@ function install_kubelet {
 }
 
 function init_config {
-	local REQUIRED=( 'ADVERTISE_IP' 'ETCD_ENDPOINTS' 'CONTROLLER_ENDPOINT' 'DNS_SERVICE_IP' 'K8S_VER' 'ARTIFACT_URL' )
+	local REQUIRED=( 'ADVERTISE_IP' 'CONTROLLER_ENDPOINT' 'DNS_SERVICE_IP' 'K8S_VER' 'ARTIFACT_URL' )
 
 	if [ -f $ENV_FILE ]; then
 		export $(cat $ENV_FILE | xargs)
