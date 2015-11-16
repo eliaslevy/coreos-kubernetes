@@ -37,6 +37,14 @@ coreos:
           # Load the other hosts in the etcd leader autoscaling group from file.
           EnvironmentFile=/etc/sysconfig/etcd-peers
 
+  - name: docker.service
+    command: start
+    drop-ins:
+      - name: 10-opts.conf
+        content: |
+          [Service]
+          Environment="DOCKER_OPTS=--log-level=warn"
+
   - name: install-controller.service
     command: start
     content: |

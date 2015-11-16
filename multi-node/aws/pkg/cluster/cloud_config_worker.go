@@ -12,7 +12,7 @@ coreos:
       - name: 10-cbr0.conf
         content: |
           [Service]
-          Environment="DOCKER_OPTS=--bridge=cbr0 --iptables=false --ip-masq=false"
+          Environment="DOCKER_OPTS=--bridge=cbr0 --iptables=false --ip-masq=false --log-level=warn"
 
   - name: install-worker.service
     command: start
