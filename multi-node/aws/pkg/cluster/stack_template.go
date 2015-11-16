@@ -22,10 +22,10 @@ const (
 	resNameAlarmControllerRecoverVpn    = "AlarmControllerRecoverVpn"
 	resNameSecurityGroupController      = "SecurityGroupController"
 	resNameSecurityGroupWorker          = "SecurityGroupWorker"
-	resNameInstanceController           = "InstanceController"
-	resNameAlarmControllerRecover       = "AlarmControllerRecover"
+	resNameAutoScaleController          = "AutoScaleController"
 	resNameAutoScaleWorker              = "AutoScaleWorker"
 	resNameAutoScaleWorkerDenseStorage  = "AutoScaleWorkerDenseStorage"
+	resNameLaunchConfigurationController= "LaunchConfigurationController"
 	resNameLaunchConfigurationWorker    = "LaunchConfigurationWorker"
 	resNameLaunchConfigurationWorkerDenseStorage = "LaunchConfigurationWorkerDenseStorage"
 	resNameIAMRoleController            = "IAMRoleController"
@@ -38,6 +38,7 @@ const (
 	parNameReleaseChannel           = "ReleaseChannel"
 	parNameControllerInstanceType   = "ControllerInstanceType"
 	parNameControllerRootVolumeSize = "ControllerRootVolumeSize"
+	parNameControllerCount          = "ControllerCount"
 	parNameWorkerInstanceType       = "WorkerInstanceType"
 	parWorkerDenseStorageInstanceType = "WorkerDenseStorageInstanceType"
 	parNameKeyName                  = "KeyName"
@@ -464,8 +465,27 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		},
 	}
 
-	res[resNameInstanceController] = map[string]interface{}{
-		"Type": "AWS::EC2::Instance",
+	res[resNameAutoScaleController] = map[string]interface{}{
+		"Type": "AWS::AutoScaling::AutoScalingGroup",
+		"Properties": map[string]interface{}{
+			"AvailabilityZones":       []interface{}{availabilityZone},
+			"LaunchConfigurationName": newRef(resNameLaunchConfigurationController),
+			"DesiredCapacity":         newRef(parNameControllerCount),
+			"MinSize":                 newRef(parNameControllerCount),
+			"MaxSize":                 newRef(parNameControllerCount),
+			"HealthCheckGracePeriod":  600,
+			"HealthCheckType":         "EC2",
+			"VPCZoneIdentifier":       []interface{}{newRef(resNameSubnet)},
+			"LoadBalancerNames":       []interface{}{newRef(resNameLoadBalancerController)},
+			"Tags": []interface{}{
+				newPropagatingTag(tagKubernetesCluster, newRef(parClusterName)),
+				newPropagatingTag("Name", "kube-aws-controller"),
+			},
+		},
+	}
+
+	res[resNameLaunchConfigurationController] = map[string]interface{}{
+		"Type": "AWS::AutoScaling::LaunchConfiguration",
 		"Properties": map[string]interface{}{
 			"ImageId":      imageID,
 			"InstanceType": newRef(parNameControllerInstanceType),
@@ -473,62 +493,14 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 			"UserData": map[string]interface{}{
 				"Fn::Base64": renderTemplate(baseControllerCloudConfig),
 			},
+			"SecurityGroups":     []interface{}{newRef(resNameSecurityGroupController)},
 			"IamInstanceProfile": newRef(resNameIAMInstanceProfileController),
-			"NetworkInterfaces": []map[string]interface{}{
-				map[string]interface{}{
-					"PrivateIpAddress":         "10.0.0.50",
-					"AssociatePublicIpAddress": true,
-					"DeleteOnTermination":      true,
-					"DeviceIndex":              "0",
-					"SubnetId":                 newRef(resNameSubnet),
-					"GroupSet": []map[string]interface{}{
-						newRef(resNameSecurityGroupController),
-					},
-				},
-			},
 			"BlockDeviceMappings": []map[string]interface{}{
 				map[string]interface{}{
 					"DeviceName": "/dev/xvda",
 					"Ebs": map[string]interface{}{
 						"VolumeSize": newRef(parNameControllerRootVolumeSize),
 					},
-				},
-			},
-			"AvailabilityZone": availabilityZone,
-			"Tags": []map[string]interface{}{
-				newTag(tagKubernetesCluster, newRef(parClusterName)),
-				newTag("Name", "kube-aws-controller"),
-			},
-		},
-	}
-
-	res[resNameAlarmControllerRecover] = map[string]interface{}{
-		"Type": "AWS::CloudWatch::Alarm",
-		"Properties": map[string]interface{}{
-			"AlarmDescription":   "Trigger a recovery when system check fails for 5 consecutive minutes.",
-			"Namespace":          "AWS/EC2",
-			"MetricName":         "StatusCheckFailed_System",
-			"Statistic":          "Minimum",
-			"Period":             "60",
-			"EvaluationPeriods":  "5",
-			"ComparisonOperator": "GreaterThanThreshold",
-			"Threshold":          "0",
-			"AlarmActions": []interface{}{
-				map[string]interface{}{
-					"Fn::Join": []interface{}{
-						"",
-						[]interface{}{
-							"arn:aws:automate:",
-							newRef("AWS::Region"),
-							":ec2:recover",
-						},
-					},
-				},
-			},
-			"Dimensions": []interface{}{
-				map[string]interface{}{
-					"Name":  "InstanceId",
-					"Value": newRef(resNameInstanceController),
 				},
 			},
 		},
@@ -592,7 +564,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 
 	res[resNameAutoScaleWorker] = map[string]interface{}{
 		"Type": "AWS::AutoScaling::AutoScalingGroup",
-		"DependsOn": []interface{}{resNameInstanceController},
+		"DependsOn": []interface{}{resNameAutoScaleController},
 		"Properties": map[string]interface{}{
 			"AvailabilityZones":       []interface{}{availabilityZone},
 			"LaunchConfigurationName": newRef(resNameLaunchConfigurationWorker),
@@ -611,7 +583,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 
 	res[resNameAutoScaleWorkerDenseStorage] = map[string]interface{}{
 		"Type": "AWS::AutoScaling::AutoScalingGroup",
-		"DependsOn": []interface{}{resNameInstanceController},
+		"DependsOn": []interface{}{resNameAutoScaleController},
 		"Properties": map[string]interface{}{
 			"AvailabilityZones":       []interface{}{availabilityZone},
 			"LaunchConfigurationName": newRef(resNameLaunchConfigurationWorkerDenseStorage),
@@ -648,6 +620,12 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		"Type":        "String",
 		"Default":     "m3.medium",
 		"Description": "EC2 instance type used for each controller instance",
+	}
+
+	par[parNameControllerCount] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     "1",
+		"Description": "Number of controller instances to create, may be modified later",
 	}
 
 	par[parNameControllerRootVolumeSize] = map[string]interface{}{

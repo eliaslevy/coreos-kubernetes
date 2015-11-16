@@ -22,7 +22,6 @@ func (c *ClusterInfo) String() string {
 	w.Init(buf, 0, 8, 0, '\t', 0)
 
 	fmt.Fprintf(w, "Cluster Name:\t%s\n", c.Name)
-	fmt.Fprintf(w, "Controller IP:\t10.0.0.50\n")
 	fmt.Fprintf(w, "VPN IP:\t%s\n", c.VpnIP)
 
 	w.Flush()
@@ -100,6 +99,11 @@ func (c *Cluster) Create(tlsConfig *TLSConfig) error {
 		{
 			ParameterKey:     aws.String(parAPIServerKey),
 			ParameterValue:   aws.String(base64.StdEncoding.EncodeToString(tlsConfig.APIServerKey)),
+			UsePreviousValue: aws.Bool(true),
+		},
+		{
+			ParameterKey:     aws.String(parNameControllerCount),
+			ParameterValue:   aws.String(fmt.Sprintf("%d", c.cfg.ControllerCount)),
 			UsePreviousValue: aws.Bool(true),
 		},
 		{
