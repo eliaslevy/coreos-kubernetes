@@ -5,9 +5,6 @@ coreos:
   update:
     reboot-strategy: "off"
 
-  flannel:
-    interface: $private_ipv4
-
   etcd2:
     name: controller
     advertise-client-urls: http://$private_ipv4:2379

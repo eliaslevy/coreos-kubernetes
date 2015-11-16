@@ -5,10 +5,6 @@ coreos:
   update:
     reboot-strategy: "off"
 
-  flannel:
-    interface: $private_ipv4
-    etcd_endpoints: http://10.0.0.50:2379
-
   units:
   - name: docker.service
     command: start
