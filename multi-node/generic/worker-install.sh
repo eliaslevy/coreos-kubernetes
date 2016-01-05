@@ -10,7 +10,7 @@ export ETCD_ENDPOINTS=
 export CONTROLLER_ENDPOINT=
 
 # Specify the version (vX.Y.Z) of Kubernetes assets to deploy
-export K8S_VER=v1.0.7
+export K8S_VER=v1.1.2
 
 # The IP address of the cluster DNS service.
 # This must be the same DNS_SERVICE_IP used when configuring the controller nodes.
@@ -58,8 +58,7 @@ ExecStart=/usr/bin/kubelet \
   --cluster_domain=cluster.local \
   --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
   --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
-  --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
-  --cadvisor-port=0
+  --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
 Restart=always
 RestartSec=10
 [Install]
@@ -112,6 +111,7 @@ spec:
     - proxy
     - --master=${CONTROLLER_ENDPOINT}
     - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
+    - --proxy-mode=iptables
     securityContext:
       privileged: true
     volumeMounts:

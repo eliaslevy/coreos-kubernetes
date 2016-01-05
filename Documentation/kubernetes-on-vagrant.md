@@ -7,20 +7,24 @@ After completing this guide, a deployer will be able to interact with the Kubern
 
 ### Vagrant
 
-Navigate to the [Vagrant downloads page][vagrant-downloads] and grab the appropriate package for your system. Install the downloaded software before continuing.
+Navigate to the [Vagrant downloads page][vagrant-downloads] and grab the appropriate package for your system. Install the Vagrant software before continuing.
 
 [vagrant-downloads]: https://www.vagrantup.com/downloads.html
 
 ### kubectl
 
-The primary CLI tool used to interact with the Kubernetes API is called `kubectl`.
-This tool is not yet available through the typical means of software distribution, so it is suggested that you download the binary directly from the Kubernetes release artifact site:
+`kubectl` is the main program for interacting with the Kubernetes API. Download `kubectl` from the Kubernetes release artifact site with the `curl` tool.
 
-First, download the binary using a command-line tool such as `wget` or `curl` from `https://storage.googleapis.com/kubernetes-release/release/v1.0.7/bin/${ARCH}/amd64/kubectl`.
-Set the ARCH environment variable to "linux" or "darwin" based on your workstation operating system:
+The linux `kubectl` binary can be fetched with a command like:
 
 ```sh
-ARCH=linux; wget https://storage.googleapis.com/kubernetes-release/release/v1.0.7/bin/$ARCH/amd64/kubectl
+curl -O https://storage.googleapis.com/kubernetes-release/release/v1.1.2/bin/linux/amd64/kubectl
+```
+
+On an OS X workstation, replace `linux` in the URL above with `darwin`:
+
+```sh
+curl -O https://storage.googleapis.com/kubernetes-release/release/v1.1.2/bin/darwin/amd64/kubectl
 ```
 
 After downloading the binary, ensure it is executable and move it into your PATH:
@@ -60,15 +64,25 @@ Next, simply run `vagrant up` and wait for the command to succeed.
 Once Vagrant is finished booting and provisioning your machine, your cluster is good to go.
 
 ## Configure kubectl
+You can choose from one of the two following options.
 
-Configure your local Kubernetes client using the following commands:
+1. **Use a custom KUBECONFIG path**
 
-```sh
-$ kubectl config set-cluster vagrant --server=https://172.17.4.101:443 --certificate-authority=${PWD}/ssl/ca.pem
-$ kubectl config set-credentials vagrant-admin --certificate-authority=${PWD}/ssl/ca.pem --client-key=${PWD}/ssl/admin-key.pem --client-certificate=${PWD}/ssl/admin.pem
-$ kubectl config set-context vagrant --cluster=vagrant --user=vagrant-admin
-$ kubectl config use-context vagrant
-```
+	```sh
+	export KUBECONFIG="${KUBECONFIG}:$(pwd)/kubeconfig"
+	kubectl config use-context vagrant-multi
+	```
+
+2. **Update the local-user kubeconfig**
+
+	Configure your local Kubernetes client using the following commands:
+
+	```sh
+	$ kubectl config set-cluster vagrant-multi-cluster --server=https://172.17.4.101:443 --certificate-authority=${PWD}/ssl/ca.pem
+	$ kubectl config set-credentials vagrant-multi-admin --certificate-authority=${PWD}/ssl/ca.pem --client-key=${PWD}/ssl/admin-key.pem --client-certificate=${PWD}/ssl/admin.pem
+	$ kubectl config set-context vagrant-multi --cluster=vagrant-multi-cluster --user=vagrant-multi-admin
+	$ kubectl config use-context vagrant-multi
+	```
 
 Check that your client is configured properly by using `kubectl` to inspect your cluster:
 
@@ -81,6 +95,6 @@ NAME          LABELS                               STATUS
 <div class="co-m-docs-next-step">
   <p><strong>Is kubectl working correctly?</strong></p>
   <p>Now that you've got a working Kubernetes cluster with a functional CLI tool, you are free to deploy Kubernetes-ready applications.
-Start with a <a href="http://kubernetes.io/v1.0/examples/guestbook-go/README.html" data-category="Docs Next" data-event="kubernetes.io: Guestbook">multi-tier web application</a> from the official Kubernetes documentation to visualize how the various Kubernetes components fit together.</p>
-  <a href="http://kubernetes.io/v1.0/examples/guestbook-go/README.html" class="btn btn-default btn-icon-right" data-category="Docs Next" data-event="kubernetes.io: Guestbook">View the Guestbook example app</a>
+Start with a <a href="http://kubernetes.io/v1.1/examples/guestbook-go/README.html" data-category="Docs Next" data-event="kubernetes.io: Guestbook">multi-tier web application</a> from the official Kubernetes documentation to visualize how the various Kubernetes components fit together.</p>
+  <a href="http://kubernetes.io/v1.1/examples/guestbook-go/README.html" class="btn btn-default btn-icon-right" data-category="Docs Next" data-event="kubernetes.io: Guestbook">View the Guestbook example app</a>
 </div>

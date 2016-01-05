@@ -26,6 +26,7 @@ write_files:
   content: |
     CONTROLLER_ENDPOINT=https://kubernetes.{{ ClusterName }}.cluster.local
     ARTIFACT_URL={{ ArtifactURL }}
+    DNS_SERVICE_IP={{ DNSServiceIP }}
     ES_HOSTS={{ ElasticSearchHosts }}
 
 - path: /tmp/install-worker.sh

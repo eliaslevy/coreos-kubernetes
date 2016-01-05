@@ -4,9 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/url"
 
 	"gopkg.in/yaml.v2"
+)
+
+const (
+	DefaultVPCCIDR             = "10.0.0.0/16"
+	DefaultInstanceCIDR        = "10.0.0.0/24"
+	DefaultControllerIP        = "10.0.0.50"
+	DefaultPodCIDR             = "10.2.0.0/16"
+	DefaultServiceCIDR         = "10.3.0.0/24"
+	DefaultKubernetesServiceIP = "10.3.0.1"
+	DefaultDNSServiceIP        = "10.3.0.10"
 )
 
 var (
@@ -20,11 +31,20 @@ type Config struct {
 	Region                   string `yaml:"region"`
 	AvailabilityZone         string `yaml:"availabilityZone"`
 	ArtifactURL              string `yaml:"artifactURL"`
+	ReleaseChannel           string `yaml:"releaseChannel"`
 	ControllerCount          int    `yaml:"controllerCount"`
+	ControllerInstanceType   string `yaml:"controllerInstanceType"`
 	ControllerRootVolumeSize int    `yaml:"controllerRootVolumeSize"`
 	WorkerCount              int    `yaml:"workerCount"`
+	WorkerInstanceType       string `yaml:"workerInstanceType"`
 	WorkerDenseStorageCount  int    `yaml:"workerDenseStorageCount"`
 	WorkerRootVolumeSize     int    `yaml:"workerRootVolumeSize"`
+	VPCCIDR                  string `yaml:"vpcCIDR"`
+	InstanceCIDR             string `yaml:"instanceCIDR"`
+	PodCIDR                  string `yaml:"podCIDR"`
+	ServiceCIDR              string `yaml:"serviceCIDR"`
+	KubernetesServiceIP      string `yaml:"kubernetesServiceIP"`
+	DNSServiceIP             string `yaml:"dnsServiceIP"`
 	ElasticSearchHosts       string `yaml:"elasticSearchHosts"`
 }
 
@@ -44,9 +64,86 @@ func (cfg *Config) Valid() error {
 	if _, err := url.Parse(cfg.ArtifactURL); err != nil {
 		return fmt.Errorf("invalid artifactURL: %v", err)
 	}
-	if cfg.ElasticSearchHosts == "" {
-		return errors.New("elasticSearchHosts must be set")
+
+	vpcCIDR := cfg.VPCCIDR
+	if vpcCIDR == "" {
+		vpcCIDR = DefaultVPCCIDR
 	}
+	_, vpcNet, err := net.ParseCIDR(vpcCIDR)
+	if err != nil {
+		return fmt.Errorf("invalid vpcCIDR: %v", err)
+	}
+
+	instanceCIDR := cfg.InstanceCIDR
+	if instanceCIDR == "" {
+		instanceCIDR = DefaultInstanceCIDR
+	}
+	instancesNetIP, instancesNet, err := net.ParseCIDR(instanceCIDR)
+	if err != nil {
+		return fmt.Errorf("invalid instanceCIDR: %v", err)
+	}
+	if !vpcNet.Contains(instancesNetIP) {
+		return fmt.Errorf("vpcCIDR (%s) does not contain instanceCIDR (%s)",
+			vpcCIDR,
+			instanceCIDR,
+		)
+	}
+
+	podCIDR := cfg.PodCIDR
+	if podCIDR == "" {
+		podCIDR = DefaultPodCIDR
+	}
+	podNetIP, podNet, err := net.ParseCIDR(podCIDR)
+	if err != nil {
+		return fmt.Errorf("invalid podCIDR: %v", err)
+	}
+	if vpcNet.Contains(podNetIP) {
+		return fmt.Errorf("vpcCIDR (%s) overlaps with podCIDR (%s)", vpcCIDR, podCIDR)
+	}
+
+	serviceCIDR := cfg.ServiceCIDR
+	if serviceCIDR == "" {
+		serviceCIDR = DefaultServiceCIDR
+	}
+	serviceNetIP, serviceNet, err := net.ParseCIDR(serviceCIDR)
+	if err != nil {
+		return fmt.Errorf("invalid serviceCIDR: %v", err)
+	}
+	if vpcNet.Contains(serviceNetIP) {
+		return fmt.Errorf("vpcCIDR (%s) overlaps with serviceCIDR (%s)", vpcCIDR, serviceCIDR)
+	}
+	if podNet.Contains(serviceNetIP) || serviceNet.Contains(podNetIP) {
+		return fmt.Errorf("serviceCIDR (%s) overlaps with podCIDR (%s)", serviceCIDR, podCIDR)
+	}
+
+	kubernetesServiceIP := cfg.KubernetesServiceIP
+	if kubernetesServiceIP == "" {
+		kubernetesServiceIP = DefaultKubernetesServiceIP
+	}
+	kubernetesServiceIPAddr := net.ParseIP(kubernetesServiceIP)
+	if kubernetesServiceIPAddr == nil {
+		return fmt.Errorf("Invalid kubernetesServiceIP: %s", kubernetesServiceIP)
+	}
+	if !serviceNet.Contains(kubernetesServiceIPAddr) {
+		return fmt.Errorf("serviceCIDR (%s) does not contain kubernetesServiceIP (%s)", serviceCIDR, kubernetesServiceIP)
+	}
+
+	dnsServiceIP := cfg.DNSServiceIP
+	if dnsServiceIP == "" {
+		dnsServiceIP = DefaultDNSServiceIP
+	}
+	dnsServiceIPAddr := net.ParseIP(dnsServiceIP)
+	if dnsServiceIPAddr == nil {
+		return fmt.Errorf("Invalid dnsServiceIP: %s", dnsServiceIP)
+	}
+	if !serviceNet.Contains(dnsServiceIPAddr) {
+		return fmt.Errorf("serviceCIDR (%s) does not contain dnsServiceIP (%s)", serviceCIDR, dnsServiceIP)
+	}
+
+	if cfg.ElasticSearchHosts == "" {
+		return fmt.Errorf("serviceCIDR (%s) does not contain dnsServiceIP (%s)", serviceCIDR, dnsServiceIP)
+	}
+
 	return nil
 }
 

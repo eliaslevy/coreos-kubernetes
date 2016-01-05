@@ -7,7 +7,7 @@ After completing this guide, a deployer will be able to interact with the Kubern
 
 ### CoreOS Installation
 
-For all nodes running Kubernetes components (controller & workers), you must use CoreOS version 773.1.0+ for the kubelet to be present in the image.
+For all nodes running Kubernetes components (controller & workers), you must use CoreOS version 773.1.0+ on the Alpha or Beta channel for the kubelet to be present in the image.
 
 Use the official CoreOS bare metal guides for installation instructions:
 
@@ -29,10 +29,10 @@ However, bare metal is a common platform where a self-managed network is used, d
 See the [Kubernetes networking](kubernetes-networking.md) documentation for more information on self-managed networking options.
 
 [coreos-flannel]: https://coreos.com/flannel/docs/latest/flannel-config.html
-[pod-network]: http://kubernetes.io/v1.0/docs/design/networking.html#pod-to-pod
+[pod-network]: http://kubernetes.io/v1.1/docs/design/networking.html#pod-to-pod
 
-<p><strong>Did you install CoreOS on your machines?</strong> An SSH connection to each machine is all that's needed. We'll start the configuration next.</p>
 <div class="co-m-docs-next-step">
+  <p><strong>Did you install CoreOS on your machines?</strong> An SSH connection to each machine is all that's needed. We'll start the configuration next.</p>
   <a href="getting-started.md" class="btn btn-primary btn-icon-right"  data-category="Getting Started" data-event="Getting Started">I'm ready to get started</a>
 </div>
 

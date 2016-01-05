@@ -1,4 +1,4 @@
-# Kubernetes Installation with Vagrant &amp; CoreOS
+# Single-Node Kubernetes Installation with Vagrant &amp; CoreOS
 
 While Kubernetes is designed to run across large clusters, it can be useful to have Kubernetes available on a single machine.
 This guide walks a deployer through this process using Vagrant and CoreOS.
@@ -14,14 +14,18 @@ Navigate to the [Vagrant downloads page][vagrant-downloads] and grab the appropr
 
 ### kubectl
 
-The primary CLI tool used to interact with the Kubernetes API is called `kubectl`.
-This tool is not yet available through the typical means of software distribution, so it is suggested that you download the binary directly from the Kubernetes release artifact site:
+`kubectl` is the main program for interacting with the Kubernetes API. Download `kubectl` from the Kubernetes release artifact site with the `curl` tool.
 
-First, download the binary using a command-line tool such as `wget` or `curl` from `https://storage.googleapis.com/kubernetes-release/release/v1.0.7/bin/${ARCH}/amd64/kubectl`.
-Set the ARCH environment variable to "linux" or "darwin" based on your workstation operating system:
+The linux `kubectl` binary can be fetched with a command like:
 
 ```sh
-ARCH=linux; wget https://storage.googleapis.com/kubernetes-release/release/v1.0.7/bin/$ARCH/amd64/kubectl
+curl -O https://storage.googleapis.com/kubernetes-release/release/v1.1.2/bin/linux/amd64/kubectl
+```
+
+On an OS X workstation, replace `linux` in the URL above with `darwin`:
+
+```sh
+curl -O https://storage.googleapis.com/kubernetes-release/release/v1.1.2/bin/darwin/amd64/kubectl
 ```
 
 After downloading the binary, ensure it is executable and move it into your PATH:
@@ -49,12 +53,21 @@ Once Vagrant is finished booting and provisioning your machine, your cluster is 
 
 Once in the `coreos-kubernetes/single-node/` directory, configure your local Kubernetes client using the following commands:
 
-```sh
-$ kubectl config set-cluster vagrant --server=https://172.17.4.99:443 --certificate-authority=${PWD}/ssl/ca.pem
-$ kubectl config set-credentials vagrant-admin --certificate-authority=${PWD}/ssl/ca.pem --client-key=${PWD}/ssl/admin-key.pem --client-certificate=${PWD}/ssl/admin.pem
-$ kubectl config set-context vagrant --cluster=vagrant --user=vagrant-admin
-$ kubectl config use-context vagrant
-```
+You can choose from one of the two following options.
+
+1. **Use a custom KUBECONFIG path**
+   ```sh
+   export KUBECONFIG="${KUBECONFIG}:$(pwd)/kubeconfig"
+   kubectl config use-context vagrant-single
+   ```
+
+2. **Update the local-user kubeconfig**
+   ```sh
+   $ kubectl config set-cluster vagrant-single-cluster --server=https://172.17.4.99:443 --certificate-authority=${PWD}/ssl/ca.pem
+   $ kubectl config set-credentials vagrant-single-admin --certificate-authority=${PWD}/ssl/ca.pem --client-key=${PWD}/ssl/admin-key.pem --client-certificate=${PWD}/ssl/admin.pem
+   $ kubectl config set-context vagrant-single --cluster=vagrant-single-cluster --user=vagrant-single-admin
+   $ kubectl config use-context vagrant-single
+   ```
 
 Check that your client is configured properly by using `kubectl` to inspect your cluster:
 
@@ -67,6 +80,6 @@ NAME          LABELS                               STATUS
 <div class="co-m-docs-next-step">
   <p><strong>Is kubectl working correctly?</strong></p>
   <p>Now that you've got a working Kubernetes cluster with a functional CLI tool, you are free to deploy Kubernetes-ready applications.
-Start with a <a href="http://kubernetes.io/v1.0/examples/guestbook-go/README.html" data-category="Docs Next" data-event="kubernetes.io: Guestbook">multi-tier web application</a> from the official Kubernetes documentation to visualize how the various Kubernetes components fit together.</p>
-  <a href="http://kubernetes.io/v1.0/examples/guestbook-go/README.html" class="btn btn-default btn-icon-right" data-category="Docs Next" data-event="kubernetes.io: Guestbook">View the Guestbook example app</a>
+Start with a <a href="http://kubernetes.io/v1.1/examples/guestbook-go/README.html" data-category="Docs Next" data-event="kubernetes.io: Guestbook">multi-tier web application</a> from the official Kubernetes documentation to visualize how the various Kubernetes components fit together.</p>
+  <a href="http://kubernetes.io/v1.1/examples/guestbook-go/README.html" class="btn btn-default btn-icon-right" data-category="Docs Next" data-event="kubernetes.io: Guestbook">View the Guestbook example app</a>
 </div>

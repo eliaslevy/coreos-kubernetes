@@ -195,7 +195,7 @@ func initTLS(cfg *cluster.Config, dir string) (*cluster.TLSConfig, error) {
 			cfg.ExternalDNSName,
 		},
 		IPAddresses: []string{
-			"10.3.0.1",
+			cfg.KubernetesServiceIP,
 		},
 	}
 	if err := initTLSServer(apiserverConfig, caCert, caKey, apiserverKeyPath, apiserverCertPath); err != nil {

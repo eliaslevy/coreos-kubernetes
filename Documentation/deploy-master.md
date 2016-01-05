@@ -1,6 +1,6 @@
 # Deploy Kubernetes Master Machine
 
-Boot a single CoreOS machine which will be used as the Kubernetes master. You must use a CoreOS version 773.1.0+ for the `kubelet` to be present in the image.
+Boot a single CoreOS machine which will be used as the Kubernetes master. You must use a CoreOS version 773.1.0+ on the Alpha or Beta channel for the `kubelet` to be present in the image.
 
 See the [CoreOS Documentation](https://coreos.com/os/docs/latest/) for guides on launching nodes on supported platforms.
 
@@ -12,7 +12,11 @@ If you are deploying multiple master nodes in a high-availability cluster, these
 
 ### TLS Assets
 
-Place the keys generated previously in the following locations:
+Create the required directory and place the keys generated previously in the following locations:
+
+```
+$ mkdir -p /etc/kubernetes/ssl
+```
 
 * File: `/etc/kubernetes/ssl/ca.pem`
 * File: `/etc/kubernetes/ssl/apiserver.pem`
@@ -43,7 +47,7 @@ FLANNELD_IFACE=${ADVERTISE_IP}
 FLANNELD_ETCD_ENDPOINTS=${ETCD_ENDPOINTS}
 ```
 
-Next create a [systemd drop-in][dropins], which will use the above configuration when flannel starts
+Next create a [systemd drop-in][dropins], which is a method for appending or overriding parameters of a systemd unit. In this case we're appending two dependency rules. Create the following drop-in, which will use the above configuration when flannel starts:
 
 **/etc/systemd/system/flanneld.service.d/40-ExecStartPre-symlink.conf**
 
@@ -62,7 +66,7 @@ In order for flannel to manage the pod network in the cluster, Docker needs to b
 
 *Note:* If the pod-network is being managed independently of flannel, this step can be skipped. See [kubernetes networking](kubernetes-networking.md) for more detail.
 
-We're going to do this with a [systemd drop-in][dropins], which is a method for appending or overriding parameters of a systemd unit. In this case we're appending two dependency rules. Create the drop-in:
+We're going to do this, like we proceeded above with flannel, using a [systemd drop-in][dropins]:
 
 **/etc/systemd/system/docker.service.d/40-flannel.conf**
 
@@ -76,7 +80,7 @@ After=flanneld.service
 
 ### Create the kubelet Unit
 
-The [kubelet](http://kubernetes.io/v1.0/docs/admin/kubelet.html) is the agent on each machine that starts and stops Pods and other machine-level tasks. The kubelet communicates with the API server (also running on the master machines) with the TLS certificates we placed on disk earlier.
+The [kubelet](http://kubernetes.io/v1.1/docs/admin/kubelet.html) is the agent on each machine that starts and stops Pods and other machine-level tasks. The kubelet communicates with the API server (also running on the master machines) with the TLS certificates we placed on disk earlier.
 
 On the master node, the kubelet is configured to communicate with the API server, but not register for cluster work, as shown in the `--register-node=false` line in the YAML excerpt below. This prevents user pods being scheduled on the master nodes, and ensures cluster work is routed only to task-specific worker nodes.
 
@@ -95,9 +99,8 @@ ExecStart=/usr/bin/kubelet \
   --allow-privileged=true \
   --config=/etc/kubernetes/manifests \
   --hostname-override=${ADVERTISE_IP} \
-  --cluster_dns=${DNS_SERVICE_IP} \
-  --cluster_domain=cluster.local \
-  --cadvisor-port=0
+  --cluster-dns=${DNS_SERVICE_IP} \
+  --cluster-domain=cluster.local
 Restart=always
 RestartSec=10
 [Install]
@@ -128,15 +131,15 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-apiserver
-    image: gcr.io/google_containers/hyperkube:v1.0.7
+    image: gcr.io/google_containers/hyperkube:v1.1.2
     command:
     - /hyperkube
     - apiserver
     - --bind-address=0.0.0.0
-    - --etcd_servers=${ETCD_ENDPOINTS}
+    - --etcd-servers=${ETCD_ENDPOINTS}
     - --allow-privileged=true
     - --service-cluster-ip-range=${SERVICE_IP_RANGE}
-    - --secure_port=443
+    - --secure-port=443
     - --advertise-address=${ADVERTISE_IP}
     - --admission-control=NamespaceLifecycle,NamespaceExists,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota
     - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
@@ -186,11 +189,12 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-proxy
-    image: gcr.io/google_containers/hyperkube:v1.0.7
+    image: gcr.io/google_containers/hyperkube:v1.1.2
     command:
     - /hyperkube
     - proxy
     - --master=http://127.0.0.1:8080
+    - --proxy-mode=iptables
     securityContext:
       privileged: true
     volumeMounts:
@@ -265,7 +269,7 @@ spec:
     name: manifest-dst
 ```
 
-#### Set Up the kube-controller-manager Pod
+### Set Up the kube-controller-manager Pod
 
 The controller manager is responsible for reconciling any required actions based on changes to [Replication Controllers][rc-overview].
 
@@ -287,7 +291,7 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-controller-manager
-    image: gcr.io/google_containers/hyperkube:v1.0.7
+    image: gcr.io/google_containers/hyperkube:v1.1.2
     command:
     - /hyperkube
     - controller-manager
@@ -335,7 +339,7 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-scheduler
-    image: gcr.io/google_containers/hyperkube:v1.0.7
+    image: gcr.io/google_containers/hyperkube:v1.1.2
     command:
     - /hyperkube
     - scheduler
@@ -366,7 +370,7 @@ $ sudo systemctl daemon-reload
 Earlier it was mentioned that flannel stores cluster-level configuration in etcd. We need to configure our Pod network IP range now. Since etcd was started earlier, we can set this now. If you don't have etcd running, start it now.
 
 * Replace `$POD_NETWORK`
-* Replace `$ETCD_SERVER` with one host from `$ETCD_ENDPOINTS`
+* Replace `$ETCD_SERVER` with one url (`http://ip:port`) from `$ETCD_ENDPOINTS`
 
 ```sh
 $ curl -X PUT -d "value={\"Network\":\"$POD_NETWORK\",\"Backend\":{\"Type\":\"vxlan\"}}" "$ETCD_SERVER/v2/keys/coreos.com/network/config"
@@ -405,7 +409,7 @@ A successful response should look something like:
 {
   "major": "1",
   "minor": "0",
-  "gitVersion": "v1.0.6",
+  "gitVersion": "v1.1.2",
   "gitCommit": "388061f00f0d9e4d641f9ed4971c775e1654579d",
   "gitTreeState": "clean"
 }

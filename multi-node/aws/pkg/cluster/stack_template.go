@@ -56,15 +56,18 @@ const (
 	parWorkerDenseStorageCount      = "WorkerDenseStorageCount"
 	parNameWorkerRootVolumeSize     = "WorkerRootVolumeSize"
 	parAvailabilityZone             = "AvailabilityZone"
+	parVPCCIDR                      = "VPCCIDR"
+	parInstanceCIDR                 = "InstanceCIDR"
+	parServiceCIDR                  = "ServiceCIDR"
+	parPodCIDR                      = "PodCIDR"
+	parKubernetesServiceIP          = "KubernetesServiceIP"
+	parDNSServiceIP                 = "DNSServiceIP"
 	parElasticSearchHosts           = "ElasticSearchHosts"
 )
 
 var (
-	supportedChannels    = []string{"alpha"}
+	supportedChannels    = []string{"alpha", "beta"}
 	tagKubernetesCluster = "KubernetesCluster"
-
-	vpcCidr = "10.0.0.0/16"
-	podCidr = "10.2.0.0/16"
 
 	sgProtoTCP = "tcp"
 	sgProtoUDP = "udp"
@@ -167,7 +170,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 	res[resNameVPC] = map[string]interface{}{
 		"Type": "AWS::EC2::VPC",
 		"Properties": map[string]interface{}{
-			"CidrBlock":          vpcCidr,
+			"CidrBlock":          newRef(parVPCCIDR),
 			"EnableDnsSupport":   true,
 			"EnableDnsHostnames": true,
 			"InstanceTenancy":    "default",
@@ -221,7 +224,7 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		"Type": "AWS::EC2::Subnet",
 		"Properties": map[string]interface{}{
 			"AvailabilityZone":    availabilityZone,
-			"CidrBlock":           "10.0.0.0/24",
+			"CidrBlock":           newRef(parInstanceCIDR),
 			"MapPublicIpOnLaunch": true,
 			"VpcId":               newRef(resNameVPC),
 			"Tags": []map[string]interface{}{
@@ -244,10 +247,10 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 			"GroupDescription": "VPN server security group",
 			"VpcId":            newRef(resNameVPC),
 			"SecurityGroupIngress": []map[string]interface{}{
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":   22, "ToPort":   22, "CidrIp": "0.0.0.0/0"},
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":  443, "ToPort":  443, "CidrIp": "0.0.0.0/0"},
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":  943, "ToPort":  943, "CidrIp": "0.0.0.0/0"},
-				map[string]interface{}{"IpProtocol": sgProtoUDP, "FromPort": 1194, "ToPort": 1194, "CidrIp": "0.0.0.0/0"},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":   22, "ToPort":   22, "CidrIp": sgAllIPs},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":  443, "ToPort":  443, "CidrIp": sgAllIPs},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":  943, "ToPort":  943, "CidrIp": sgAllIPs},
+				map[string]interface{}{"IpProtocol": sgProtoUDP, "FromPort": 1194, "ToPort": 1194, "CidrIp": sgAllIPs},
 			},
 			"Tags": []map[string]interface{}{
 				newTag(tagKubernetesCluster, newRef(parClusterName)),
@@ -347,9 +350,9 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 				map[string]interface{}{"IpProtocol": sgProtoUDP, "FromPort": 0, "ToPort": sgPortMax, "CidrIp": sgAllIPs},
 			},
 			"SecurityGroupIngress": []map[string]interface{}{
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":  22, "ToPort":  22, "CidrIp": vpcCidr},
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": vpcCidr},
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": podCidr},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort":  22, "ToPort":  22, "CidrIp": newRef(parVPCCIDR)},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": newRef(parVPCCIDR)},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": newRef(parPodCIDR)},
 			},
 			"Tags": []map[string]interface{}{
 				newTag(tagKubernetesCluster, newRef(parClusterName)),
@@ -381,8 +384,8 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 				},
 			},
 			"SecurityGroupIngress": []map[string]interface{}{
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": vpcCidr},
-				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": podCidr},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": newRef(parVPCCIDR)},
+				map[string]interface{}{"IpProtocol": sgProtoTCP, "FromPort": 443, "ToPort": 443, "CidrIp": newRef(parPodCIDR)},
 			},
 			"Tags": []map[string]interface{}{
 				newTag(tagKubernetesCluster, newRef(parClusterName)),
@@ -400,8 +403,8 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 				map[string]interface{}{"IpProtocol": sgProtoUDP, "FromPort": 0, "ToPort": sgPortMax, "CidrIp": sgAllIPs},
 			},
 			"SecurityGroupIngress": []map[string]interface{}{
-				map[string]interface{}{"IpProtocol": "-1", "FromPort": 0, "ToPort": sgPortMax, "CidrIp": vpcCidr},
-				map[string]interface{}{"IpProtocol": "-1", "FromPort": 0, "ToPort": sgPortMax, "CidrIp": podCidr},
+				map[string]interface{}{"IpProtocol": "-1", "FromPort": 0, "ToPort": sgPortMax, "CidrIp": newRef(parVPCCIDR)},
+				map[string]interface{}{"IpProtocol": "-1", "FromPort": 0, "ToPort": sgPortMax, "CidrIp": newRef(parPodCIDR)},
 			},
 			"Tags": []map[string]interface{}{
 				newTag(tagKubernetesCluster, newRef(parClusterName)),
@@ -813,7 +816,43 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 	par[parAvailabilityZone] = map[string]interface{}{
 		"Type":        "String",
 		"Default":     "",
-		"Description": "Specific availability zone",
+		"Description": "Specific availability zone (optional)",
+	}
+
+	par[parVPCCIDR] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     DefaultVPCCIDR,
+		"Description": "CIDR for Kubernetes vpc",
+	}
+
+	par[parInstanceCIDR] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     DefaultInstanceCIDR,
+		"Description": "CIDR for Kubernetes subnet",
+	}
+
+	par[parServiceCIDR] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     DefaultServiceCIDR,
+		"Description": "CIDR for all service IP addresses",
+	}
+
+	par[parPodCIDR] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     DefaultPodCIDR,
+		"Description": "CIDR for all pod IP addresses",
+	}
+
+	par[parKubernetesServiceIP] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     DefaultKubernetesServiceIP,
+		"Description": "IP address for Kubernetes controller service (must be contained by serviceCIDR)",
+	}
+
+	par[parDNSServiceIP] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     DefaultDNSServiceIP,
+		"Description": "IP address of the Kubernetes DNS service (must be contained by serviceCIDR)",
 	}
 
 	par[parElasticSearchHosts] = map[string]interface{}{
