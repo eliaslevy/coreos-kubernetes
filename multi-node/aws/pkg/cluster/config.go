@@ -78,7 +78,7 @@ func (cfg *Config) Valid() error {
 	if instanceCIDR == "" {
 		instanceCIDR = DefaultInstanceCIDR
 	}
-	instancesNetIP, instancesNet, err := net.ParseCIDR(instanceCIDR)
+	instancesNetIP, _, err := net.ParseCIDR(instanceCIDR)
 	if err != nil {
 		return fmt.Errorf("invalid instanceCIDR: %v", err)
 	}
