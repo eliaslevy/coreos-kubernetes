@@ -14,7 +14,7 @@ export K8S_VER=v1.1.2
 
 # The address of the AWS provided DNS server in the cluster subnet.  It is the .2 address in 
 # whatever CIDR was assigned to the cluster subnet.
-export AWS_DNS=10.0.0.2
+export AWS_DNS_IP=
 
 # The CIDR network to use for pod IPs.
 # Each pod launched in the cluster will be assigned an IP out of this range.
@@ -51,7 +51,7 @@ function install_kubelet {
 }
 
 function init_config {
-	local REQUIRED=( 'ADVERTISE_IP' 'POD_NETWORK' 'CONTROLLER_ENDPOINT' 'DNS_SERVICE_IP' 'K8S_VER' 'ARTIFACT_URL' )
+	local REQUIRED=( 'ADVERTISE_IP' 'POD_NETWORK' 'AWS_DNS_IP' 'CONTROLLER_ENDPOINT' 'DNS_SERVICE_IP' 'K8S_VER' 'ARTIFACT_URL' )
 
 	if [ -f $ENV_FILE ]; then
 		export $(cat $ENV_FILE | xargs)
@@ -102,7 +102,7 @@ function init_templates {
 		cat << EOF > $TEMPLATE
 [Service]
 ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
-ExecStartPre=/usr/sbin/iptables -t nat -A POSTROUTING -s ${POD_NETWORK} -d ${AWS_DNS}/32 -j MASQUERADE
+ExecStartPre=/usr/sbin/iptables -t nat -A POSTROUTING -s ${POD_NETWORK} -d ${AWS_DNS_IP}/32 -j MASQUERADE
 ExecStart=/opt/kubelet \
   --api_servers=${CONTROLLER_ENDPOINT} \
   --register-node=true \

@@ -62,6 +62,7 @@ const (
 	parPodCIDR                      = "PodCIDR"
 	parKubernetesServiceIP          = "KubernetesServiceIP"
 	parDNSServiceIP                 = "DNSServiceIP"
+	parAWSDNSIP                     = "AWSDNSIP"
 	parElasticSearchHosts           = "ElasticSearchHosts"
 )
 
@@ -853,6 +854,12 @@ func StackTemplateBody(defaultArtifactURL string) (string, error) {
 		"Type":        "String",
 		"Default":     DefaultDNSServiceIP,
 		"Description": "IP address of the Kubernetes DNS service (must be contained by serviceCIDR)",
+	}
+
+	par[parAWSDNSIP] = map[string]interface{}{
+		"Type":        "String",
+		"Default":     DefaultAWSDNSIP,
+		"Description": "The address of the AWS provided DNS server in the cluster subnet (must be contained by instanceCIDR)",
 	}
 
 	par[parElasticSearchHosts] = map[string]interface{}{

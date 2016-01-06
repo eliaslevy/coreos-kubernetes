@@ -28,6 +28,7 @@ write_files:
     ARTIFACT_URL={{ ArtifactURL }}
     POD_NETWORK={{ PodCIDR }}
     DNS_SERVICE_IP={{ DNSServiceIP }}
+    AWS_DNS_IP={{ AWSDNSIP }}
     ES_HOSTS={{ ElasticSearchHosts }}
 
 - path: /tmp/install-worker.sh
