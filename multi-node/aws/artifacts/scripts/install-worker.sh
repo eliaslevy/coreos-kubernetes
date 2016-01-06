@@ -19,7 +19,7 @@ export AWS_DNS=10.0.0.2
 # The CIDR network to use for pod IPs.
 # Each pod launched in the cluster will be assigned an IP out of this range.
 # Each node will be configured such that these IPs will be routable using the Kubernetes AWS cloud provider.
-export POD_NETWORK=10.2.0.0/16
+export POD_NETWORK=
 
 # The IP address of the cluster DNS service.
 # This must be the same DNS_SERVICE_IP used when configuring the controller nodes.
@@ -51,7 +51,7 @@ function install_kubelet {
 }
 
 function init_config {
-	local REQUIRED=( 'ADVERTISE_IP' 'CONTROLLER_ENDPOINT' 'DNS_SERVICE_IP' 'K8S_VER' 'ARTIFACT_URL' )
+	local REQUIRED=( 'ADVERTISE_IP' 'POD_NETWORK' 'CONTROLLER_ENDPOINT' 'DNS_SERVICE_IP' 'K8S_VER' 'ARTIFACT_URL' )
 
 	if [ -f $ENV_FILE ]; then
 		export $(cat $ENV_FILE | xargs)

@@ -26,6 +26,7 @@ write_files:
   content: |
     CONTROLLER_ENDPOINT=https://kubernetes.{{ ClusterName }}.cluster.local
     ARTIFACT_URL={{ ArtifactURL }}
+    POD_NETWORK={{ PodCIDR }}
     DNS_SERVICE_IP={{ DNSServiceIP }}
     ES_HOSTS={{ ElasticSearchHosts }}
 
