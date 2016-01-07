@@ -9,8 +9,11 @@ spec:
   containers:
     - name: apply-labels
       image: elevy/aws-node-labels:latest
-      securityContext:
-        privileged: true
+      env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
       volumeMounts:
         - mountPath: /etc/kubernetes/ssl
           name: kubernetes-ssl
